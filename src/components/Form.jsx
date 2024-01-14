@@ -18,7 +18,8 @@ export function convertToEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
-const BASE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
+const BASE_URL = `https://us1.locationiq.com/v1/reverse`;
+const KEY = import.meta.env.VITE_API_KEY;
 
 function Form() {
   const navigate = useNavigate();
@@ -42,15 +43,26 @@ function Form() {
       try {
         setIsLoadingGeocoding(true);
         setGeoCodingError("");
-        const res = await fetch(`${BASE_URL}?latitude=${lat}&lng=${lng}`);
+        const res = await fetch(
+          `${BASE_URL}?key=pk.196d3ba8d9c0bc2f5bdb108f9d23ebab&lat=${lat}&lon=${lng}&format=json`
+        );
         const data = await res.json();
-        if (!data.countryCode)
+        if (data.error) {
+          throw new Error("That's not a city. Click somewhere else 😉");
+        }
+        if (!data.address.country_code)
           throw new Error(
             "That doesn't seem to be a city. Click somewhere else 😉"
           );
-        setCityName(data.city || data.locality || "");
-        setCountry(data.countryName);
-        setEmoji(convertToEmoji(data.countryCode));
+        setCityName(
+          data.address.city ||
+            data.address.village ||
+            data.address.town ||
+            data.address.state_district ||
+            data.address.state
+        );
+        setCountry(data.address.country);
+        setEmoji(convertToEmoji(data.address.country_code));
       } catch (err) {
         setGeoCodingError(err.message);
       } finally {
